@@ -1,0 +1,78 @@
+@startuml
+!include _style.iuml
+hide empty members
+class Server {
+  addr : net.Addr
+  sched : *Scheduler
+  GenerateHandler()
+  ChatHandler()
+  EmbedHandler()
+  PullHandler() / CreateHandler()
+}
+class Scheduler {
+  pendingReqCh : chan *LlmRequest
+  finishedReqCh : chan *LlmRequest
+  expiredCh : chan *runnerRef
+  loaded : map[string]*runnerRef
+  getRunner(model, opts) : (chan, chan)
+  processPending()
+  processCompleted()
+  load(req, gpus) : bool
+}
+class LlmRequest {
+  model : *Model
+  opts : api.Options
+  sessionDuration
+  successCh / errCh
+}
+class runnerRef {
+  refCount : uint
+  llama : LlamaServer
+  gpus : []DeviceID
+  vramSize / totalSize
+  expireTimer
+}
+interface LlamaServer <<interface>> {
+  Load(ctx, sys, gpus) : []DeviceID
+  Completion(ctx, req, fn)
+  Chat(ctx, req, fn)
+  Embedding(ctx, input)
+  Tokenize() / Detokenize()
+  MemorySize() / Close()
+}
+class llamaServer <<llama.cpp subprocess>>
+class "mlxrunner.Client" as mlxServer <<MLX subprocess>>
+class Model {
+  Name / ShortName
+  ModelPath
+  AdapterPaths / ProjectorPaths
+  Template / System
+  Options
+  Capabilities()
+}
+class Manifest {
+  Config : Layer
+  Layers : []Layer
+}
+class Layer {
+  MediaType
+  Digest : sha256
+  Size
+}
+class DeviceInfo <<ml>> {
+  ID / Library (CUDA, ROCm,
+  Metal, Vulkan, CPU)
+  TotalMemory / FreeMemory
+}
+Server "1" o-- "1" Scheduler
+Server ..> Model : resolves
+Scheduler "1" o-- "*" runnerRef : loaded
+Scheduler ..> LlmRequest : queues
+LlmRequest --> Model
+runnerRef --> LlamaServer
+LlamaServer <|.. llamaServer
+LlamaServer <|.. mlxServer
+Scheduler ..> DeviceInfo : fits model into
+Model --> Manifest : built from
+Manifest *-- "1..*" Layer
+@enduml

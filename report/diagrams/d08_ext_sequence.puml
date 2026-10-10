@@ -1,0 +1,33 @@
+@startuml
+!include _style.iuml
+participant "Client" as CL
+participant "HTTP middleware" as H
+participant "Scheduler" as S
+participant "Runner" as R
+participant "Event bus" as B
+participant "Metrics / Traces /\nLedger observers" as O
+participant "Prometheus" as P
+CL -> H : POST /api/chat
+H -> B : Emit(RequestStarted)
+H -> S : getRunner()
+S -> B : Emit(QueueWaited{wait, queueLen})
+opt cold start
+  S -> R : load model
+  S -> B : Emit(ModelLoaded{load, vram, evicted})
+end
+H -> R : Chat()
+R --> H : stream tokens
+R -> B : Emit(TokensGenerated{prompt, eval,\ndurations, cacheHit})
+H --> CL : final chunk
+H -> B : Emit(RequestFinished{status, total})
+B -> O : OnEvent(e) (async goroutine)
+note right of B
+  Emit never blocks the request path:
+  if the buffer is full the event is
+  dropped and a counter is increased.
+end note
+== every 15 s ==
+P -> H : GET /metrics
+H -> O : WritePrometheus()
+O --> P : text exposition
+@enduml

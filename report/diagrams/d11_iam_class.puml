@@ -1,0 +1,72 @@
+@startuml
+!include _style.iuml
+hide empty members
+class User {
+  id; username; display_name; email
+  password_hash : scrypt
+  auth_source : admin | signup
+  is_active
+  mfa_secret; mfa_enabled; mfa_last_step
+  failed_logins; locked_until
+  model_allow : glob list
+}
+class Role {
+  name : admin | operator | developer | viewer
+  label; about
+}
+enum Perm {
+  SYSTEM_READ
+  MODEL_LIST
+  MODEL_RUN
+  MODEL_PULL
+  MODEL_PUSH
+  MODEL_MANAGE
+  AUDIT_READ
+  IAM_ADMIN
+}
+class PendingSignup {
+  id : random token (cookie)
+  email; display_name
+  password_hash : scrypt
+  role : from e-mail domain
+  code_hash : sha256
+  attempts (max 5); sends (max 5)
+  expires_at (10 min)
+}
+class Session {
+  id : 256-bit random
+  expires_at; csrf
+  mfa_pending; auth_method
+  revoked
+}
+
+class Principal {
+  user_id; roles; model_allow
+  perms() = union of role perms
+  can(Perm) : bool
+  may_use_model(name) : bool
+}
+class RouteRule {
+  method; pattern
+  perm : Perm
+  model_from : body | path | none
+}
+class "PolicyDecisionPoint\n(decide)" as PDP {
+  decide(principal, method, path, models) : Decision
+}
+class Decision {
+  allowed; status; reason
+}
+class AuditEvent {
+  ts; actor; action; model; decision; status; ip; request_id
+}
+User "1" -- "1..*" Role : has >
+Role "*" -- "*" Perm : grants >
+PendingSignup ..> User : becomes after\ncode is confirmed
+User "1" *-- "*" Session
+Session ..> Principal : resolves to
+PDP --> "*" RouteRule
+PDP ..> Principal
+PDP ..> Decision
+PDP ..> AuditEvent : every decision\nis recorded
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+!include _style.iuml
+node "Lab / team server" {
+  node "Reverse proxy\n(Caddy / nginx, TLS)" as tls
+  node "Ollama Gateway\nuvicorn :8000" as gw
+  database "data/iam.sqlite3" as db
+  node "ollama serve\n127.0.0.1:11434" as ol
+  node "GPU" as gpu
+}
+node "Laptops" {
+  [Browser] as br
+}
+cloud "SMTP server\n(Gmail / Outlook /\ncampus relay)" as smtp
+br --> tls : HTTPS 443
+tls --> gw : HTTP (loopback)
+gw --> db
+gw --> ol : HTTP (loopback only)
+ol --> gpu
+gw --> smtp : SMTP 587\n(STARTTLS)
+@enduml

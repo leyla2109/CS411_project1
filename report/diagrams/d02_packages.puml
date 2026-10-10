@@ -1,0 +1,47 @@
+@startuml
+!include _style.iuml
+skinparam linetype ortho
+package "Clients" {
+  [cmd\n(CLI, TUI, launch)] as cmd
+  [app\n(desktop app, tray, UI)] as app
+  [api\n(Go client + types)] as api
+}
+package "HTTP layer" {
+  [server\n(Gin routes, handlers)] as server
+  [middleware\n(OpenAI / Anthropic\ntranslation)] as mw
+  [openai / anthropic] as compat
+}
+package "Model handling" {
+  [manifest / transfer\n(registry, blobs)] as manifest
+  [create / parser\n(Modelfile)] as create
+  [fs/gguf, fs/safetensors] as fs
+  [template, model/renderers,\nmodel/parsers, harmony,\nthinking, tools] as tmpl
+}
+package "Execution" {
+  [server/sched\n(Scheduler)] as sched
+  [llm\n(LlamaServer interface,\nllama-server wrapper)] as llm
+  [mlxrunner\n(Apple MLX engine)] as mlx
+  [discover / ml\n(GPU discovery,\ndevice info)] as discover
+  [llama\n(vendored llama.cpp)] as llama
+}
+[envconfig] as env
+[auth\n(ed25519 keys)] as auth
+cmd --> api
+app --> api
+api --> server : HTTP/JSON
+server --> mw
+mw --> compat
+server --> sched
+server --> manifest
+server --> create
+server --> tmpl
+create --> fs
+create --> manifest
+sched --> llm
+sched --> mlx
+sched --> discover
+llm --> llama
+manifest --> auth
+server ..> env
+sched ..> env
+@enduml

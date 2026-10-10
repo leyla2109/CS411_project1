@@ -1,0 +1,43 @@
+@startuml
+!include _style.iuml
+skinparam linetype polyline
+package "ollama serve (Go process)" {
+  [HTTP layer\n(Gin)] as http
+  [Scheduler] as sched
+  [Runner wrapper\n(llm / mlxrunner)] as runner
+  [Registry client\n(pull / push)] as reg
+  package "telemetry (NEW)" #EEF6F0 {
+    interface "Emit(Event)" as emit
+    [Event bus\n(bounded, non-blocking)] as bus
+    [Metrics registry\n(counters, gauges,\nhistograms)] as metrics
+    [Trace builder\n(spans per request)] as traces
+    [Usage ledger\n(per model / per key\ntoken accounting)] as ledger
+    [Prometheus\nexposition] as prom
+    [OTLP exporter\n(optional)] as otlp
+  }
+  [GET /metrics] as mep
+  [GET /api/usage] as uep
+}
+[Desktop app\n"Activity" tab (NEW)] as ui
+[Prometheus] as P
+[OpenTelemetry\nCollector] as C
+[Grafana] as G
+[Jaeger / Tempo] as J
+http -( emit
+sched -( emit
+runner -( emit
+reg -( emit
+emit - bus
+bus --> metrics
+bus --> traces
+bus --> ledger
+metrics --> prom
+traces --> otlp
+prom --> mep
+ledger --> uep
+P --> mep : scrape (pull)
+otlp --> C : OTLP/gRPC (push)
+C --> J
+G --> P
+ui --> uep
+@enduml

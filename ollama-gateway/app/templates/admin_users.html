@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block main %}
+<div class="page-head"><div><h1>Users</h1><p>Assign roles and decide which models each person can use.</p></div></div>
+<section class="section">
+  <div class="table-wrap"><table>
+    <thead><tr><th>User</th><th>Roles</th><th>Model access</th><th>Sign-in</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for u in users %}
+    <tr>
+      <td><b>{{ u.display_name }}</b><br><span class="muted mono">{{ u.username }}</span></td>
+      <td>{% for r in u.roles %}<span class="pill {{ 'admin' if r == 'admin' }}">{{ roles[r].label }}</span>{% endfor %}</td>
+      <td class="mono">{{ u.model_allow }}</td>
+      <td>{{ 'Signed up' if u.auth_source == 'signup' else 'Added by admin' }}{% if u.mfa_enabled %} + app{% endif %}<br><span class="muted">{{ u.last_login_h }}</span></td>
+      <td>{% if not u.is_active %}<span class="pill deny">Disabled</span>{% elif u.locked %}<span class="pill deny">Locked</span>{% else %}<span class="pill allow">Active</span>{% endif %}</td>
+      <td>
+        <details class="edit"><summary>Edit</summary>
+          <form method="post" action="/ui/admin/users/{{ u.id }}" class="stack" style="min-width:260px">
+            <input type="hidden" name="csrf" value="{{ me.csrf }}">
+            <div class="checks">{% for key, r in roles.items() %}<label><input type="checkbox" name="roles" value="{{ key }}" {% if key in u.roles %}checked{% endif %}> {{ r.label }}</label>{% endfor %}</div>
+            <div><label for="ma{{ u.id }}">Model access <span class="hint">comma separated, * = all</span></label><input type="text" id="ma{{ u.id }}" name="model_allow" value="{{ u.model_allow }}"></div>
+            <label><input type="checkbox" name="is_active" value="1" {% if u.is_active %}checked{% endif %}> Account active</label>
+            <button class="btn small">Save changes</button>
+          </form>
+          <div class="row" style="margin-top:.5rem">
+            {% if u.locked %}<form method="post" action="/ui/admin/users/{{ u.id }}/unlock"><input type="hidden" name="csrf" value="{{ me.csrf }}"><button class="btn secondary small">Unlock</button></form>{% endif %}
+            {% if u.mfa_enabled %}<form method="post" action="/ui/admin/users/{{ u.id }}/reset-mfa"><input type="hidden" name="csrf" value="{{ me.csrf }}"><button class="btn secondary small">Reset authenticator</button></form>{% endif %}
+          </div>
+        </details>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+<div class="grid2">
+<section class="section">
+  <h2>Add a user</h2>
+  <form method="post" action="/ui/admin/users" class="stack">
+    <input type="hidden" name="csrf" value="{{ me.csrf }}">
+    <div class="row"><div style="flex:1"><label for="nu">Username</label><input type="text" id="nu" name="username" autocomplete="off"></div>
+    <div style="flex:1"><label for="nd">Display name</label><input type="text" id="nd" name="display_name"></div></div>
+    <div><label for="np">Initial password <span class="hint">share it privately; they can change it</span></label><input type="text" id="np" name="password" autocomplete="off"></div>
+    <div><label>Roles</label><div class="checks">{% for key, r in roles.items() %}<label><input type="checkbox" name="roles" value="{{ key }}" {% if key == 'developer' %}checked{% endif %}> {{ r.label }}</label>{% endfor %}</div></div>
+    <div><label for="nm">Model access</label><input type="text" id="nm" name="model_allow" value="*"></div>
+    <div><button class="btn">Add user</button></div>
+  </form>
+</section>
+<section class="section">
+  <h2>Roles</h2>
+  <div class="table-wrap"><table><tbody>
+  {% for key, r in roles.items() %}<tr><td><b>{{ r.label }}</b><br><span class="muted">{{ r.about }}</span></td><td>{% for p in r.perms|sort(attribute='value') %}<span class="pill">{{ p.value }}</span>{% endfor %}</td></tr>{% endfor %}
+  </tbody></table></div>
+  <p class="muted" style="margin-top:.8rem">People who sign up themselves start as Developer if their email is at {% for d in developer_domains %}<code>{{ d }}</code>{% if not loop.last %} or {% endif %}{% endfor %} (or a subdomain), otherwise as Viewer.</p>
+</section>
+</div>
+{% endblock %}

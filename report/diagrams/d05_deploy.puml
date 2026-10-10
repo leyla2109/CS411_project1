@@ -1,0 +1,36 @@
+@startuml
+!include _style.iuml
+node "User workstation / server (macOS, Windows, Linux, Docker)" as host {
+  node "Client processes" {
+    [ollama CLI]
+    [Desktop app]
+    [3rd-party apps\n(Open WebUI, IDEs,\nLangChain, agents)] as apps
+  }
+  node "ollama serve (Go process)\n:11434, default 127.0.0.1" as srv {
+    [HTTP API + Scheduler] as core
+  }
+  node "Runner subprocesses" {
+    [llama-server\n(llama.cpp, ggml)] as ls
+    [MLX runner\n(Apple silicon)] as mlx
+  }
+  database "~/.ollama/models\nmanifests/ + blobs/" as store
+  node "Accelerators" {
+    [CUDA / ROCm / Metal /\nVulkan / CPU] as gpu
+  }
+}
+cloud "ollama.com" {
+  [Model registry\n(OCI-like)] as reg
+  [Cloud models &\nweb search] as cloudm
+}
+[ollama CLI] --> core : HTTP
+[Desktop app] --> core : HTTP
+apps --> core : HTTP (native /\nOpenAI-compatible)
+core --> ls : local HTTP
+core --> mlx : local HTTP
+ls --> gpu
+mlx --> gpu
+core --> store
+ls --> store : mmap
+core --> reg : HTTPS pull/push\n(signed with ed25519 key)
+core --> cloudm : HTTPS (optional,\nOLLAMA_NO_CLOUD disables)
+@enduml

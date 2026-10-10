@@ -1,0 +1,54 @@
+skinparam dpi 200
+skinparam shadowing false
+skinparam defaultFontName "Inter"
+skinparam defaultFontSize 12
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #3a4048
+skinparam ArrowThickness 1.1
+skinparam roundCorner 8
+skinparam componentStyle uml2
+skinparam package {
+  BorderColor #8a939c
+  BackgroundColor #F6F7F9
+  FontStyle bold
+}
+skinparam component {
+  BorderColor #2f44b5
+  BackgroundColor #EEF0FB
+}
+skinparam class {
+  BorderColor #2f44b5
+  BackgroundColor #FFFFFF
+  HeaderBackgroundColor #EEF0FB
+  AttributeFontSize 11
+}
+skinparam node {
+  BorderColor #3a4048
+  BackgroundColor #F6F7F9
+}
+skinparam database {
+  BorderColor #3a4048
+  BackgroundColor #FFFFFF
+}
+skinparam actor {
+  BorderColor #3a4048
+  BackgroundColor #FFFFFF
+}
+skinparam usecase {
+  BorderColor #2f44b5
+  BackgroundColor #EEF0FB
+}
+skinparam sequence {
+  ParticipantBorderColor #2f44b5
+  ParticipantBackgroundColor #EEF0FB
+  LifeLineBorderColor #8a939c
+  ActorBorderColor #3a4048
+  GroupBorderColor #8a939c
+  GroupBackgroundColor #F6F7F9
+  BoxBorderColor #8a939c
+}
+skinparam note {
+  BorderColor #c9a227
+  BackgroundColor #FFF8DC
+}
+skinparam stereotypeCBackgroundColor #c9d0f5

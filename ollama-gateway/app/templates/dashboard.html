@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Models{% endblock %}
+{% block main %}
+<div class="page-head">
+  <div><h1>Models</h1><p>What you can do on this Ollama server, and a quick way to try it.</p></div>
+  <div>{% for r in me.roles %}<span class="pill {{ 'admin' if r == 'admin' }}">{{ roles[r].label }}</span>{% endfor %}</div>
+</div>
+<div class="grid2">
+  <section class="section">
+    <h2>Models you can use</h2>
+    {% if models_error %}<div class="notice bad">{{ models_error }}</div>{% endif %}
+    {% if models %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Size</th><th>Family</th></tr></thead>
+      <tbody>{% for m in models %}<tr><td class="mono">{{ m.name }}</td><td>{{ m.size_h }}</td><td>{{ m.details.family if m.details else '' }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% elif not models_error %}<p class="muted">No models match your allowlist yet. An operator can pull one, or an administrator can widen your access.</p>{% endif %}
+    <p class="muted" style="margin-top:.8rem">Allowed patterns: {% for p in me.model_allow %}<code>{{ p }}</code> {% endfor %}</p>
+  </section>
+  <section class="section">
+    <h2>Your permissions</h2>
+    <ul class="perm-list">
+      {% for p in all_perms %}<li class="{{ '' if me.can(p.value) else 'no' }}">{{ '✓' if me.can(p.value) else '–' }} <code>{{ p.value }}</code></li>{% endfor %}
+    </ul>
+  </section>
+</div>
+<section class="section" style="margin-top:20px">
+  <h2>Try a prompt</h2>
+  {% if me.can('model:run') %}
+  <form id="chat" class="stack">
+    <div class="row">
+      <select id="model" aria-label="Model" style="max-width:280px">{% for m in models %}<option>{{ m.name }}</option>{% endfor %}<option value="__other">Another model…</option></select>
+      <input type="text" id="other" placeholder="model:tag" style="max-width:220px;display:none" aria-label="Model name">
+    </div>
+    <textarea id="prompt" rows="2" placeholder="Ask something…" aria-label="Prompt"></textarea>
+    <div class="row"><button class="btn" type="submit">Send</button><span class="muted" id="status"></span></div>
+  </form>
+  <div class="chat-log" id="log" aria-live="polite" style="margin-top:.8rem"></div>
+  {% else %}
+  <p class="muted">Your role can list models but not run them. Ask an administrator for the Developer role.</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+const form = document.getElementById('chat');
+if (form) {
+  const csrf = document.querySelector('meta[name=csrf-token]').content;
+  const sel = document.getElementById('model'), other = document.getElementById('other');
+  sel.addEventListener('change', () => other.style.display = sel.value === '__other' ? '' : 'none');
+  const log = document.getElementById('log'), status = document.getElementById('status');
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const model = sel.value === '__other' ? other.value.trim() : sel.value;
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!model || !prompt) return;
+    log.insertAdjacentHTML('beforeend', '<div class="me"></div><div class="bot"></div>');
+    log.lastElementChild.previousElementSibling.textContent = '› ' + prompt;
+    const out = log.lastElementChild;
+    status.textContent = 'Waiting for ' + model + '…';
+    const t0 = performance.now();
+    const res = await fetch('/api/chat', {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': csrf},
+      body: JSON.stringify({model, messages: [{role: 'user', content: prompt}], stream: true})});
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({error: res.statusText}));
+      out.className = 'err'; out.textContent = res.status + ' — ' + err.error; status.textContent = ''; return;
+    }
+    const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '';
+    for (;;) {
+      const {value, done} = await reader.read(); if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let i; while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i); buf = buf.slice(i + 1);
+        if (line.trim()) { const j = JSON.parse(line); if (j.message) out.textContent += j.message.content; }
+      }
+      log.scrollTop = log.scrollHeight;
+    }
+    status.textContent = 'Done in ' + Math.round(performance.now() - t0) + ' ms · request id ' + (res.headers.get('x-request-id') || '');
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+@startuml
+!include _style.iuml
+skinparam linetype polyline
+actor "Person\n(browser)" as person
+node "Ollama Gateway (FastAPI)" {
+  package "Presentation" {
+    [Sign-up, login\n& MFA pages] as login
+    [Account, Users,\nAudit pages] as pages
+  }
+  package "IAM core" {
+    [IAMService\n(users, sessions,\nlockout, MFA)] as iam
+    [SignupService\n(pending sign-ups,\ncodes, domain → role)] as signup
+    [Policy Decision Point\n(roles, route table,\nmodel allowlist)] as pdp
+    [security\n(scrypt, TOTP,\nrandom tokens)] as sec
+    [Mailer\n(SMTP)] as mail
+  }
+  package "Gateway" {
+    [Policy Enforcement Point\n(reverse proxy)] as pep
+  }
+  [AuditLog] as audit
+  database "SQLite\nusers, user_roles, sessions,\nsignups, audit_log" as db
+}
+[SMTP server\n(Gmail, Outlook, campus relay)] as smtp
+[Ollama\n127.0.0.1:11434] as ollama
+person --> login
+person --> pages
+person --> pep : Ollama API calls\n(cookie + X-CSRF-Token)
+login --> iam
+login --> signup
+pages --> iam
+signup --> iam : create user
+signup --> mail
+mail --> smtp : SMTP + STARTTLS
+iam --> sec
+pep --> iam : identify
+pep --> pdp : decide
+pep --> ollama : forward (streaming)
+iam --> audit
+signup --> audit
+pep --> audit
+iam --> db
+signup --> db
+audit --> db
+@enduml

@@ -1,0 +1,41 @@
+{% extends "auth_base.html" %}
+{% block title %}Check your email{% endblock %}
+{% block form %}
+<h1>Check your email</h1>
+<p class="lede">We sent a 6-digit code to <b>{{ email }}</b>. It expires in {{ minutes }} minutes.</p>
+{% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+{% if info %}<div class="notice ok" role="status">{{ info }}</div>{% endif %}
+<form method="post" action="/ui/signup/verify" id="mfa-form">
+  <input type="hidden" name="csrf" value="{{ login_csrf }}">
+  <input type="hidden" name="code" id="code">
+  <fieldset style="border:0;padding:0;margin:0">
+    <legend class="otp-hidden">6-digit code</legend>
+    <div class="otp">
+      {% for i in range(6) %}<input type="text" inputmode="numeric" maxlength="1" aria-label="Digit {{ i + 1 }}" {% if i == 0 %}autocomplete="one-time-code" autofocus{% endif %}>{% endfor %}
+    </div>
+  </fieldset>
+  <button class="btn block" type="submit">Confirm and create account</button>
+</form>
+<p class="hint" style="margin-top:1rem">Your account will start with the <b>{{ role }}</b> role.</p>
+<form method="post" action="/ui/signup/resend" class="switch">
+  <input type="hidden" name="csrf" value="{{ login_csrf }}">
+  No email? Check spam, or <button class="linkish" type="submit">send a new code</button>. Wrong address? <a href="/ui/signup">Start again</a>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+const boxes = [...document.querySelectorAll('.otp input')];
+const hidden = document.getElementById('code');
+const sync = () => { hidden.value = boxes.map(b => b.value).join(''); if (hidden.value.length === 6) document.getElementById('mfa-form').requestSubmit(); };
+boxes.forEach((b, i) => {
+  b.addEventListener('input', () => { b.value = b.value.replace(/\D/g, '').slice(-1); if (b.value && boxes[i + 1]) boxes[i + 1].focus(); sync(); });
+  b.addEventListener('keydown', e => { if (e.key === 'Backspace' && !b.value && boxes[i - 1]) boxes[i - 1].focus(); });
+  b.addEventListener('paste', e => {
+    const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
+    if (!digits) return; e.preventDefault();
+    digits.split('').forEach((d, j) => { if (boxes[j]) boxes[j].value = d; });
+    (boxes[digits.length] || boxes[5]).focus(); sync();
+  });
+});
+</script>
+{% endblock %}

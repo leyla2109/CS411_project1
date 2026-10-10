@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block main %}
+<div class="page-head"><div><h1>Audit log</h1><p>Every sign-in, permission decision and change, newest first.</p></div>
+<form method="get" class="row">
+  <input type="text" name="actor" value="{{ actor or '' }}" placeholder="Filter by user" aria-label="Filter by user" style="max-width:200px">
+  <select name="decision" aria-label="Decision"><option value="">All decisions</option>{% for d in ('allow','deny','info') %}<option value="{{ d }}" {% if decision == d %}selected{% endif %}>{{ d|capitalize }}</option>{% endfor %}</select>
+  <button class="btn secondary">Filter</button>
+</form></div>
+<section class="section">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Time</th><th>Who</th><th>Event</th><th>Model</th><th>Result</th><th>Detail</th></tr></thead>
+    <tbody>{% for e in events %}<tr>
+      <td class="mono" style="white-space:nowrap">{{ e.ts_h }}</td>
+      <td>{{ e.actor or '—' }}<br><span class="muted">{{ e.actor_type }}{% if e.ip %} · {{ e.ip }}{% endif %}</span></td>
+      <td class="mono">{{ e.action }}</td>
+      <td class="mono">{{ e.model or '' }}</td>
+      <td><span class="pill {{ e.decision }}">{{ e.decision }}{% if e.status %} {{ e.status }}{% endif %}</span></td>
+      <td class="muted">{{ e.detail or '' }}</td>
+    </tr>{% else %}<tr><td colspan="6" class="muted">Nothing matches these filters.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

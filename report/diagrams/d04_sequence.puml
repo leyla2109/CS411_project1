@@ -1,0 +1,38 @@
+@startuml
+!include _style.iuml
+autonumber
+actor User
+participant "ollama CLI\n(api.Client)" as CLI
+participant "Server\n(ChatHandler)" as S
+participant "Scheduler" as SC
+participant "discover" as D
+participant "llama-server\nsubprocess" as R
+database "~/.ollama/models" as FS
+User -> CLI : ollama run llama3.2
+CLI -> S : POST /api/show (model exists?)
+alt model missing
+  CLI -> S : POST /api/pull (stream progress)
+  S -> FS : write blobs + manifest
+end
+User -> CLI : "Why is the sky blue?"
+CLI -> S : POST /api/chat {model, messages, stream}
+S -> S : resolve model, render prompt\n(template / renderer)
+S -> SC : getRunner(model, opts)
+alt model already loaded
+  SC --> S : runnerRef (refCount++)
+else needs loading
+  SC -> D : free VRAM per GPU
+  SC -> SC : estimate memory, pick GPUs,\nevict idle runners if needed
+  SC -> R : spawn with GGUF path, ctx, layers
+  R -> FS : mmap weights
+  R --> SC : ready
+  SC --> S : runnerRef
+end
+S -> R : Chat / Completion (HTTP on local port)
+loop for each token batch
+  R --> S : CompletionResponse chunk
+  S --> CLI : NDJSON {"message":{"content":...}}
+end
+S --> CLI : final {done:true, eval_count, durations}
+S -> SC : finished(req) -> start keep-alive timer
+@enduml

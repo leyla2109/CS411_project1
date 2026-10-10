@@ -1,0 +1,25 @@
+@startuml
+!include _style.iuml
+participant "Browser\n(Models page)" as C
+participant "Gateway\n(PEP)" as G
+participant "IAMService" as I
+participant "PDP" as P
+participant "Ollama" as O
+participant "AuditLog" as A
+C -> G : POST /api/chat\ncookie olg_session + X-CSRF-Token
+G -> I : session_principal()
+I -> I : session exists, not expired,\nnot revoked; user active;\nCSRF token matches
+I --> G : Principal(roles, allowlist)
+G -> G : extract "model" from JSON body
+G -> P : decide(principal, POST, /api/chat, [llama3.2])
+alt denied
+  P --> G : 401 / 403 + reason
+  G -> A : record(deny)
+  G --> C : {"error": "..."} (Ollama format)
+else allowed
+  G -> O : forward request (cookies removed,\nX-Request-ID, X-Forwarded-User)
+  G -> A : record(allow, status)
+  O --> G : NDJSON stream
+  G --> C : relay chunks unchanged\n(tokens appear as they are generated)
+end
+@enduml

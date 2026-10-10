@@ -1,0 +1,21 @@
+@startuml
+!include _style.iuml
+node "GPU host" {
+  node "ollama serve\n(OLLAMA_METRICS=1,\nOLLAMA_OTLP_ENDPOINT=...)" as o
+  node "DCGM / node exporter\n(optional sidecar)" as side
+}
+node "Monitoring host / cluster" {
+  node "Prometheus" as p
+  node "OTel Collector" as c
+  node "Grafana" as g
+  node "Tempo / Jaeger" as t
+  node "Alertmanager" as a
+}
+p --> o : HTTP GET /metrics
+p --> side : HTTP GET /metrics
+o --> c : OTLP (gRPC 4317)
+c --> t
+g --> p
+g --> t
+p --> a : alert rules\n(queue saturation,\nOOM reloads, p95 latency)
+@enduml

@@ -1,0 +1,56 @@
+{% extends "auth_base.html" %}
+{% block title %}Create an account{% endblock %}
+{% block form %}
+<h1>Create an account</h1>
+<p class="lede">We'll email you a 6-digit code to confirm the address.</p>
+{% if not enabled %}
+<div class="notice bad" role="alert">Sign-up is off because this server can't send email yet. An administrator needs to set the SMTP settings (see the README) and restart the gateway, or add your account on the Users page.</div>
+{% else %}
+{% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+<form method="post" action="/ui/signup" id="signup-form" novalidate>
+  <input type="hidden" name="csrf" value="{{ login_csrf }}">
+  <div class="field">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" value="{{ form.email or '' }}" autocomplete="email" autocapitalize="none" spellcheck="false" required autofocus>
+    <div class="hint" id="role-hint" style="margin-top:.3rem">{% for d in developer_domains %}@{{ d }}{% if not loop.last %} or {% endif %}{% endfor %} addresses can run models right away.</div>
+  </div>
+  <div class="field">
+    <label for="display_name">Name</label>
+    <input type="text" id="display_name" name="display_name" value="{{ form.display_name or '' }}" autocomplete="name" required>
+  </div>
+  <div class="field">
+    <label for="password">Password <span class="hint">10+ characters, three character types</span></label>
+    <div class="pw-wrap">
+      <input type="password" id="password" name="password" autocomplete="new-password" required>
+      <button type="button" class="pw-toggle" aria-controls="password" aria-pressed="false">Show</button>
+    </div>
+  </div>
+  <button class="btn block" type="submit">Send confirmation code</button>
+</form>
+{% endif %}
+<p class="switch">Already have an account? <a href="/ui/login">Sign in</a></p>
+{% endblock %}
+{% block scripts %}
+<script>
+const pw = document.getElementById('password');
+const toggle = document.querySelector('.pw-toggle');
+if (toggle) toggle.addEventListener('click', () => {
+  const show = pw.type === 'password';
+  pw.type = show ? 'text' : 'password';
+  toggle.textContent = show ? 'Hide' : 'Show';
+  toggle.setAttribute('aria-pressed', String(show));
+  pw.focus();
+});
+const domains = {{ developer_domains|tojson }};
+const email = document.getElementById('email'), hint = document.getElementById('role-hint');
+if (email) email.addEventListener('input', () => {
+  const d = (email.value.split('@')[1] || '').toLowerCase();
+  if (!d.includes('.')) return;
+  const dev = domains.some(x => d === x || d.endsWith('.' + x));
+  hint.textContent = dev ? 'You will start as a Developer and can run models right away.'
+                         : 'You will start as a Viewer. An administrator can give you access to run models.';
+});
+const f = document.getElementById('signup-form');
+if (f) f.addEventListener('submit', () => { const b = f.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Sending code…'; });
+</script>
+{% endblock %}

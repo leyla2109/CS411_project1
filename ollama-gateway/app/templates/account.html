@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Account{% endblock %}
+{% block main %}
+<div class="page-head"><div><h1>Account</h1><p>Protect your sign-in.</p></div></div>
+
+
+
+<div class="grid2">
+<section class="section">
+  <h2>Two-step verification</h2>
+  {% if user.mfa_enabled %}
+    <p><span class="pill allow">On</span> You'll be asked for a code from your authenticator app at every sign-in.</p>
+    <form method="post" action="/ui/account/mfa/disable"><input type="hidden" name="csrf" value="{{ me.csrf }}"><button class="btn danger small">Turn off two-step verification</button></form>
+  {% elif enrol_secret %}
+    <p>Scan this code with Google Authenticator, Microsoft Authenticator, 1Password or any TOTP app, then type the 6-digit code it shows.</p>
+    <div class="row" style="align-items:flex-start">
+      <img class="qr" src="data:image/png;base64,{{ enrol_qr }}" alt="QR code for your authenticator app">
+      <div style="flex:1;min-width:200px">
+        <p class="hint">Can't scan? Enter this key manually:</p>
+        <div class="secret">{{ enrol_secret }}</div>
+        <form method="post" action="/ui/account/mfa/confirm" style="margin-top:1rem">
+          <input type="hidden" name="csrf" value="{{ me.csrf }}">
+          <label for="code">Code from the app</label>
+          <div class="row"><input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" style="max-width:9rem;font-family:var(--mono)"><button class="btn">Turn on</button></div>
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <p><span class="pill deny">Off</span> Anyone with your password can sign in. Add an authenticator app to block that.</p>
+    <form method="post" action="/ui/account/mfa/start"><input type="hidden" name="csrf" value="{{ me.csrf }}"><button class="btn">Set up authenticator app</button></form>
+  {% endif %}
+</section>
+
+<section class="section">
+  <h2>Password</h2>
+  <form method="post" action="/ui/account/password">
+    <input type="hidden" name="csrf" value="{{ me.csrf }}">
+    <div class="field"><label for="cur">Current password</label><input type="password" id="cur" name="current" autocomplete="current-password"></div>
+    <div class="field"><label for="new">New password <span class="hint">10+ characters, three character types</span></label><input type="password" id="new" name="new" autocomplete="new-password"></div>
+    <button class="btn secondary">Change password</button>
+  </form>
+</section>
+</div>
+
+{% endblock %}

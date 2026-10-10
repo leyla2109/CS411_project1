@@ -1,0 +1,53 @@
+@startuml
+!include _style.iuml
+actor User
+participant "Browser" as B
+participant "Pages\n(web.py)" as W
+participant "SignupService" as SU
+participant "IAMService" as I
+database "SQLite" as D
+participant "SMTP server" as M
+group Sign up (once)
+  User -> B : email, name, password
+  B -> W : POST /ui/signup (csrf)
+  W -> SU : start()
+  SU -> SU : valid e-mail? not registered?\npassword policy; role from domain
+  SU -> D : insert pending sign-up\n(code stored as hash, 10 min)
+  SU -> M : "306124 is your Ollama Gateway code"
+  W --> B : 303 /ui/signup/verify + sign-up cookie
+  User -> B : 6-digit code from inbox
+  B -> W : POST /ui/signup/verify
+  W -> SU : confirm(code)
+  alt wrong code
+    SU -> D : attempts++ (discard at 5)
+    W --> B : "That code doesn't match. N attempts left."
+  else correct
+    SU -> I : create user (role developer / viewer)
+    SU -> D : delete pending sign-up
+    W -> I : login_after_signup()
+    W --> B : 303 /ui + session cookie
+  end
+end
+group Sign in (every visit)
+  User -> B : username or e-mail, password
+  B -> W : POST /ui/login (csrf)
+  W -> I : authenticate()
+  I -> D : load user, check locked_until
+  I -> I : scrypt verify (constant time)
+  alt wrong password
+    I -> D : failed_logins++ (lock at 5)
+    W --> B : 401 generic message
+  else mfa_enabled
+    I -> D : session(mfa_pending, 5 min)
+    W --> B : 303 /ui/login/mfa
+    User -> B : authenticator code
+    B -> W : POST /ui/login/mfa
+    W -> I : complete_mfa(code)
+    I -> I : verify TOTP, step > last_step
+    I -> D : rotate session id
+    W --> B : 303 /ui + new cookie
+  else no MFA
+    W --> B : 303 /ui + session cookie
+  end
+end
+@enduml

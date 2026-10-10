@@ -1,0 +1,74 @@
+@startuml
+!include _style.iuml
+hide empty members
+interface Observer <<interface>> {
+  OnEvent(e Event)
+}
+interface Exporter <<interface>> {
+  Name() string
+  Start(ctx) error
+  Shutdown(ctx) error
+}
+abstract class Event {
+  Time : time.Time
+  RequestID : string
+  Model : string
+}
+class RequestStarted {
+  Route; Client
+}
+class QueueWaited {
+  Wait : Duration; QueueLen
+}
+class ModelLoaded {
+  Load : Duration; VRAM; GPUs; Evicted
+}
+class TokensGenerated {
+  PromptTokens; EvalTokens;\nPromptEval; Eval : Duration; CacheHit
+}
+class RequestFinished {
+  Status; Total : Duration; Error
+}
+class Bus {
+  ch : chan Event (cap 4096)
+  observers : []Observer
+  dropped : atomic.Uint64
+  Emit(e Event)
+}
+class MetricsRegistry {
+  counters / gauges / histograms
+  WritePrometheus(w io.Writer)
+}
+class TraceBuilder {
+  spans : map[RequestID]*Span
+}
+class UsageLedger {
+  rows : per (model, principal, day)
+  Snapshot() Usage
+}
+class PrometheusExporter
+class OTLPExporter {
+  endpoint; sampler
+}
+class Config <<envconfig>> {
+  OLLAMA_METRICS : bool
+  OLLAMA_OTLP_ENDPOINT : string
+  OLLAMA_TRACE_SAMPLE : float
+  OLLAMA_USAGE_LEDGER : bool
+}
+Event <|-- RequestStarted
+Event <|-- QueueWaited
+Event <|-- ModelLoaded
+Event <|-- TokensGenerated
+Event <|-- RequestFinished
+Bus o-- "*" Observer
+Observer <|.. MetricsRegistry
+Observer <|.. TraceBuilder
+Observer <|.. UsageLedger
+Exporter <|.. PrometheusExporter
+Exporter <|.. OTLPExporter
+PrometheusExporter --> MetricsRegistry
+OTLPExporter --> TraceBuilder
+Bus ..> Event : dispatches
+Config ..> Bus : enables
+@enduml

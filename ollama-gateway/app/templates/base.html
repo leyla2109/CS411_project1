@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ me.csrf }}">
+<title>{% block title %}{% endblock %} · Ollama Gateway</title>
+<link rel="stylesheet" href="/ui/static/style.css">
+</head>
+<body>
+<div class="shell">
+  <nav class="nav" aria-label="Main">
+    {% include "_brand.html" %}
+    <a href="/ui" {% if active == 'home' %}aria-current="page"{% endif %}>Models</a>
+    <a href="/ui/account" {% if active == 'account' %}aria-current="page"{% endif %}>Account</a>
+    {% if me.can('iam:admin') %}<a href="/ui/admin/users" {% if active == 'users' %}aria-current="page"{% endif %}>Users</a>{% endif %}
+    {% if me.can('audit:read') %}<a href="/ui/admin/audit" {% if active == 'audit' %}aria-current="page"{% endif %}>Audit log</a>{% endif %}
+    <div class="who">
+      <b>{{ me.display_name }}</b>
+      <span class="muted">{{ me.username }}</span>
+      <form method="post" action="/ui/logout"><input type="hidden" name="csrf" value="{{ me.csrf }}"><button class="btn secondary small" type="submit">Sign out</button></form>
+    </div>
+  </nav>
+  <main class="main" id="main">
+    {% if flash %}<div class="notice {{ flash_kind or 'ok' }}" role="status">{{ flash }}</div>{% endif %}
+    {% block main %}{% endblock %}
+  </main>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

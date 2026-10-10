@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Sign in{% endblock %} · Ollama Gateway</title>
+<link rel="stylesheet" href="/ui/static/style.css">
+</head>
+<body>
+<div class="auth">
+  <section class="auth-form">
+    {% include "_brand.html" %}
+    {% block form %}{% endblock %}
+    <p class="foot">Access is logged. Lost your authenticator? Ask an administrator to reset it.</p>
+  </section>
+  <aside class="auth-side" aria-label="Connection status">
+    <h2>This server</h2>
+    <div class="route" id="route" data-up="you">
+      <div class="node n-you"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></div><b>You</b><small>browser</small></div>
+      <div class="wire w1"></div>
+      <div class="node n-gw"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></div><b>Gateway</b><small id="gw-note">checking…</small></div>
+      <div class="wire w2"></div>
+      <div class="node n-ol"><div class="dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/><path d="M8 7.5h.01M8 16.5h.01"/></svg></div><b>Ollama</b><small id="ol-note">checking…</small></div>
+    </div>
+    <ul class="facts">
+      <li><span>Accounts</span><span>Anyone can sign up with an email address. Addresses at {% for d in developer_domains %}{{ d }}{% if not loop.last %} or {% endif %}{% endfor %} start as Developers; others start as Viewers until an administrator upgrades them.</span></li>
+      <li><span>Two-step sign-in</span><span>Add an authenticator app under Account to be asked for a 6-digit code at every sign-in.</span></li>
+      <li><span>Your access</span><span>Your role decides which models you can list, run, pull or delete.</span></li>
+    </ul>
+  </aside>
+</div>
+<script>
+(async () => {
+  const route = document.getElementById('route');
+  try {
+    const r = await fetch('/healthz', {cache: 'no-store'});
+    const h = await r.json();
+    route.dataset.up = 'you gw';
+    document.getElementById('gw-note').textContent = 'online';
+    setTimeout(() => {
+      if (h.ollama.reachable) {
+        route.dataset.up = 'you gw ol';
+        document.getElementById('ol-note').textContent = h.ollama.latency_ms + ' ms';
+      } else {
+        route.dataset.down = 'ol';
+        document.getElementById('ol-note').textContent = 'unreachable';
+      }
+    }, 450);
+  } catch (e) {
+    document.getElementById('gw-note').textContent = 'offline';
+  }
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

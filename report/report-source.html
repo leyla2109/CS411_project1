@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CS411 Project 1 — Ollama</title>
+<style>
+@page { size: A4; margin: 17mm 17mm 18mm 17mm; }
+:root { --ink:#16191d; --muted:#5a616a; --line:#cfd5db; --accent:#2f44b5; --soft:#eef0fb; --paper:#f5f6f8; }
+* { box-sizing: border-box; }
+html { font: 9.7pt/1.47 "Inter", sans-serif; color: var(--ink); }
+body { margin: 0; }
+h1 { font-size: 17pt; margin: 0 0 6pt; letter-spacing: -.01em; break-after: avoid; }
+h2 { font-size: 12.5pt; margin: 14pt 0 5pt; break-after: avoid; }
+h3 { font-size: 10.5pt; margin: 10pt 0 3pt; break-after: avoid; }
+p { margin: 0 0 6pt; text-align: justify; hyphens: auto; }
+ul, ol { margin: 0 0 6pt; padding-left: 15pt; }
+li { margin: 0 0 2pt; }
+code, pre { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 8pt; }
+code { background: var(--soft); padding: 0 2pt; border-radius: 2pt; }
+pre { background: var(--paper); border: 1px solid var(--line); border-radius: 4pt; padding: 6pt 8pt; margin: 4pt 0 8pt; white-space: pre-wrap; line-height: 1.35; break-inside: avoid; }
+table { width: 100%; border-collapse: collapse; margin: 4pt 0 9pt; font-size: 8.6pt; break-inside: auto; }
+th { text-align: left; background: var(--soft); font-weight: 600; padding: 3.5pt 5pt; border-bottom: 1.2px solid var(--accent); vertical-align: bottom; }
+td { padding: 3.5pt 5pt; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr { break-inside: avoid; }
+figure { margin: 6pt 0 10pt; text-align: center; break-inside: avoid; }
+figure img { max-width: 100%; border: 1px solid var(--line); border-radius: 3pt; }
+figure.plain img { border: 0; }
+figcaption { font-size: 8.3pt; color: var(--muted); margin-top: 3pt; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; align-items: start; }
+.two figure { margin-top: 2pt; }
+.page { break-before: page; }
+.note { border-left: 3pt solid var(--accent); background: var(--soft); padding: 5pt 8pt; margin: 4pt 0 9pt; font-size: 9pt; break-inside: avoid; }
+.small { font-size: 8.5pt; color: var(--muted); }
+.qa td:first-child { font-weight: 600; white-space: nowrap; }
+
+/* cover */
+.cover { height: 260mm; display: flex; flex-direction: column; }
+.cover .course { font-size: 10pt; color: var(--muted); }
+.cover h1 { font-size: 30pt; line-height: 1.1; margin: 70mm 0 6pt; }
+.cover .sub { font-size: 13pt; color: var(--muted); max-width: 140mm; }
+.cover .bar { height: 4pt; width: 46mm; background: var(--accent); margin: 14pt 0 22pt; }
+.cover table { width: 125mm; font-size: 10pt; margin-top: auto; }
+.cover td { padding: 5pt 4pt; }
+.toc { columns: 2; column-gap: 18pt; font-size: 9pt; padding-left: 0; list-style: none; }
+.toc li { margin-bottom: 1.5pt; }
+.toc .l2 { padding-left: 10pt; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<section class="cover">
+  <div class="course">CS411 Software Architecture Design · 2026–2027 Fall · Project 1</div>
+  <h1>Ollama</h1>
+  <div class="sub">Architecture analysis, an observability extension, and an identity and access management gateway with a new login page</div>
+  <div class="bar"></div>
+  <p class="small" style="text-align:left">Studied revision: <code>ollama/ollama</code> main branch, commit <code>42e911b</code> (2 October 2026). Code for part 4 is delivered separately as <code>ollama-iam.zip</code>.</p>
+  <table>
+    <thead><tr><th>Group member</th><th>Student ID</th><th>E-mail</th></tr></thead>
+    <tbody>
+      <tr><td>[Name Surname]</td><td>[ID]</td><td>[e-mail]</td></tr>
+      <tr><td>[Name Surname]</td><td>[ID]</td><td>[e-mail]</td></tr>
+      <tr><td>[Name Surname]</td><td>[ID]</td><td>[e-mail]</td></tr>
+      <tr><td>[Name Surname]</td><td>[ID]</td><td>[e-mail]</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ CONTENTS + PART 1 -->
+<section class="page">
+<h2 style="margin-top:0">Contents</h2>
+<ul class="toc">
+  <li>1 Why we chose Ollama</li>
+  <li>2 Current architecture</li>
+  <li class="l2">2.1 Problem definition and domain</li>
+  <li class="l2">2.2 Technical problems and solutions</li>
+  <li class="l2">2.3 Stakeholders</li>
+  <li class="l2">2.4 Quality requirements</li>
+  <li class="l2">2.5 Architectural views (4+1)</li>
+  <li class="l2">2.6 Rationale</li>
+  <li class="l2">2.7 Architectural patterns</li>
+  <li>3 Extension: an observability layer</li>
+  <li class="l2">3.1 Choice of evolution area</li>
+  <li class="l2">3.2 Architectural change</li>
+  <li class="l2">3.3 Rationale</li>
+  <li class="l2">3.4 Patterns</li>
+  <li>4 Login page and IAM module</li>
+  <li class="l2">4.1 Requirements from Ollama</li>
+  <li class="l2">4.2 Architecture</li>
+  <li class="l2">4.3 The login page</li>
+  <li class="l2">4.4 Implementation</li>
+  <li class="l2">4.5 Verification and limits</li>
+  <li>5 Conclusion · References</li>
+</ul>
+
+<h1 style="margin-top:12pt">1 Why we chose Ollama</h1>
+<p>Of the five candidates, Ollama is the only one whose whole reason to exist is a <em>resource scheduling problem on a single machine</em>: it has to fit multi-gigabyte neural networks into whatever GPU, Apple-silicon or CPU memory a user happens to own, and hide that difficulty behind one command (<code>ollama run llama3.2</code>). Terraform, Argo CD, Vault and Kubernetes are mature infrastructure tools whose architectures are already heavily documented; Ollama is younger, moves quickly, and its architecture is still being shaped in public. That made it a better subject for us for four reasons.</p>
+<ul>
+  <li><b>Visible architectural decisions.</b> In the revision we studied, Ollama drives llama.cpp's own <code>llama-server</code> as a subprocess and has added a second engine for Apple's MLX framework behind the same <code>LlamaServer</code> interface. Watching an interface absorb a second implementation is exactly the kind of evolution the course discusses.</li>
+  <li><b>Readable size.</b> The Go code base is about 435 non-test source files (~138 k lines) with clear package boundaries, small enough for a team of students to read the important paths end to end.</li>
+  <li><b>Real gaps that match the assignment.</b> Ollama ships with no user authentication and no built-in metrics endpoint. Both are long-standing community requests, so part 3 (extension) and part 4 (IAM) solve problems the project actually has instead of invented ones.</li>
+  <li><b>We can run it.</b> Every team member could install it on a laptop and observe the behaviour we describe, which the other candidates (especially Kubernetes and Argo CD) make much harder.</li>
+</ul>
+
+<h1 style="margin-top:12pt">2 Current architecture</h1>
+<h2>2.1 Problem definition and domain</h2>
+<p><b>Domain.</b> Ollama belongs to <em>local LLM inference</em>: running large language models (and embedding, vision and speech models) on hardware the user controls instead of calling a hosted API. Its users want privacy (prompts never leave the machine), zero per-token cost, offline operation and freedom to choose models.</p>
+<p><b>Problem.</b> Running an open-weights model by hand means choosing a file format and quantisation, compiling an inference engine for the right GPU backend (CUDA, ROCm, Metal, Vulkan), estimating how many layers fit in video memory, writing the model's chat template, and exposing the result to applications. Ollama packages all of that: it downloads models from a registry the way Docker pulls images, works out placement on the available hardware, keeps models warm between requests, and serves them through a stable HTTP API (native, OpenAI-compatible and Anthropic-compatible) on <code>127.0.0.1:11434</code>. A <code>Modelfile</code>, deliberately modelled on a Dockerfile, lets users derive new models with their own system prompt, parameters or adapters.</p>
+</section>
+
+<!-- ============================================================ 2.2 -->
+<section>
+<h2>2.2 Major technical problems and the project's solutions</h2>
+<table>
+<thead><tr><th style="width:27%">Problem</th><th>How Ollama solves it (as found in the source)</th></tr></thead>
+<tbody>
+<tr><td>Models are larger than the memory of many machines</td><td>Quantised GGUF weights (4–8 bit) and memory-mapped loading. The scheduler (<code>server/sched.go</code>) predicts VRAM need, picks a GPU or group of GPUs, offloads the remaining layers to CPU, and on an out-of-memory load retries with a smaller automatic context (<code>reduceAutoNumCtxForLoadOOM</code>).</td></tr>
+<tr><td>Heterogeneous hardware (NVIDIA, AMD, Apple, Intel, CPU-only)</td><td>The <code>discover</code> package probes devices per platform; inference runs in bundled backend libraries selected at run time. Apple silicon additionally gets the MLX engine (<code>mlxrunner</code>).</td></tr>
+<tr><td>Several models and requests compete for one GPU</td><td>A single scheduler goroutine owns all load/unload decisions; requests arrive on channels, are queued (<code>OLLAMA_MAX_QUEUE</code>), share a loaded runner (<code>OLLAMA_NUM_PARALLEL</code>) and idle models are evicted after a keep-alive period (<code>OLLAMA_KEEP_ALIVE</code>, default 5 min).</td></tr>
+<tr><td>Inference engine crashes or leaks memory</td><td>Each loaded model runs in a separate subprocess (<code>llama-server</code> or the MLX runner) spoken to over local HTTP. A crash kills one model, not the server; the scheduler notices the exit and reloads.</td></tr>
+<tr><td>Distributing multi-GB models</td><td>Content-addressed blobs (<code>sha256</code>) plus a JSON manifest per tag, an OCI-like layout. Shared layers are stored once; downloads are chunked, parallel and resumable (<code>transfer</code>).</td></tr>
+<tr><td>Every model family has its own prompt format, tool-call and "thinking" syntax</td><td>Go templates stored as a manifest layer, plus model-specific renderers and output parsers (<code>model/renderers</code>, <code>model/parsers</code>, <code>harmony</code>, <code>thinking</code>).</td></tr>
+<tr><td>Applications are written against OpenAI's or Anthropic's API</td><td>Translation middleware (<code>middleware/</code>, <code>openai/</code>, <code>anthropic/</code>) converts <code>/v1/chat/completions</code>, <code>/v1/responses</code>, <code>/v1/messages</code> into native requests and back.</td></tr>
+<tr><td>Browser pages can reach a localhost API (DNS rebinding, CSRF)</td><td>Default bind to 127.0.0.1, an allowed-hosts check on loopback, and a CORS allow-list (<code>OLLAMA_ORIGINS</code>). Registry pushes are signed with a per-install ed25519 key (<code>auth</code>).</td></tr>
+</tbody>
+</table>
+
+<h2>2.3 Stakeholders</h2>
+<table>
+<thead><tr><th style="width:21%">Stakeholder</th><th style="width:40%">Expectations</th><th>Contributions</th></tr></thead>
+<tbody>
+<tr><td>Core maintainers (Ollama, Inc.)</td><td>A simple product, a stable API, fast support for new model releases, a sustainable business (the ollama.com registry and cloud models).</td><td>Architecture, most commits, releases, review, the registry and desktop apps.</td></tr>
+<tr><td>Community contributors</td><td>Their PRs reviewed; features such as metrics, auth, new backends.</td><td>Bug fixes, platform ports, issues, documentation, translations of APIs.</td></tr>
+<tr><td>End users and developers</td><td>One-command install, good speed on their hardware, privacy, no cost.</td><td>Bug reports, benchmarks, word of mouth, Modelfiles shared on the registry.</td></tr>
+<tr><td>Application integrators (Open WebUI, IDE assistants, agent frameworks)</td><td>API compatibility across releases, streaming, tool calling, structured output.</td><td>Most of Ollama's reach; client libraries; feedback on API design.</td></tr>
+<tr><td>Upstream projects (llama.cpp / ggml, Apple MLX)</td><td>Correct attribution and upstreamed fixes.</td><td>The inference kernels Ollama depends on.</td></tr>
+<tr><td>Model publishers (Meta, Google, Alibaba, Mistral, DeepSeek, …)</td><td>Their models run correctly with the right template on launch day.</td><td>Open weights, chat templates, sometimes direct collaboration on day-one support.</td></tr>
+<tr><td>Hardware vendors (NVIDIA, AMD, Apple, Intel)</td><td>Their accelerators are detected and used well.</td><td>Drivers, SDKs, occasionally engineering help.</td></tr>
+<tr><td>Operators in companies and labs</td><td>Run Ollama as a shared service: access control, monitoring, auditability, predictable resource use.</td><td>Deployment recipes (Docker, Kubernetes), feature requests such as #3144 (metrics).</td></tr>
+<tr><td>Security researchers</td><td>Responsible handling of reports.</td><td>Findings such as exposed unauthenticated servers and malformed-GGUF memory bugs.</td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- ============================================================ 2.4 -->
+<section>
+<h2>2.4 Quality requirements</h2>
+<p>We ranked the quality attributes by how strongly the code shows the maintainers optimising for them, and wrote one concrete scenario for each (source → stimulus → response measure), as in the quality-attribute-scenario technique from the lectures.</p>
+<table class="qa">
+<thead><tr><th>Attribute</th><th style="width:36%">Scenario</th><th>Our reasoning</th></tr></thead>
+<tbody>
+<tr><td>Usability</td><td>A new user types <code>ollama run llama3.2</code> on a fresh laptop → the model downloads, loads and answers with no configuration.</td><td>The top priority: every default (bind address, context length chosen from VRAM, keep-alive, automatic GPU layers) exists so users never need to tune.</td></tr>
+<tr><td>Performance</td><td>A warm model receives a chat request → first token in well under a second; generation speed close to raw llama.cpp.</td><td>Keep-alive, runner reuse and a thin Go layer over native kernels keep overhead small. Cold loads are the main cost, which is why eviction is lazy.</td></tr>
+<tr><td>Resource efficiency</td><td>A 14 B model is requested on a 12 GB GPU → it loads with partial CPU offload instead of failing.</td><td>Memory estimation, OOM retry with smaller context, quantised KV cache (<code>OLLAMA_KV_CACHE_TYPE</code>).</td></tr>
+<tr><td>Portability</td><td>The same release runs on macOS, Windows, Linux, Docker, on CUDA, ROCm, Metal, Vulkan or CPU.</td><td>Runtime device discovery and per-backend libraries; Go makes the server itself trivially cross-compiled.</td></tr>
+<tr><td>Interoperability</td><td>An app written for the OpenAI SDK changes only its base URL → it works.</td><td>Translation middleware is cheaper than asking the ecosystem to adopt a new API.</td></tr>
+<tr><td>Modifiability</td><td>A new model architecture is released → support ships within days.</td><td>Engine behind the <code>LlamaServer</code> interface; templates/parsers per model family; upstream llama.cpp tracked closely.</td></tr>
+<tr><td>Availability / fault isolation</td><td>A runner segfaults on a malformed input → only that request fails; the server keeps serving.</td><td>Subprocess per model; the scheduler detects exit and frees the slot.</td></tr>
+<tr><td>Security</td><td>A web page in the user's browser tries to call the local API → blocked by host/origin checks.</td><td>Secure <em>for a single local user</em>. As soon as the port is exposed there is no authentication, which is exactly part 4's subject.</td></tr>
+<tr><td>Scalability</td><td>Many users share one server → requests queue; scaling out needs an external load balancer.</td><td>Deliberately out of scope: Ollama is single-node by design.</td></tr>
+<tr><td>Observability</td><td>An operator wants request rate, queue depth and GPU memory over time → only logs and <code>/api/ps</code> exist.</td><td>Weakest attribute today; the motivation for part 3.</td></tr>
+</tbody>
+</table>
+<div class="note">The ranking reveals the architecture's central trade-off: Ollama spends its complexity budget on <b>usability, performance and portability for one user</b>, and accepts weak <b>security, scalability and observability for shared use</b>. Our extension and IAM module both target the shared-use side without hurting the single-user side (both are opt-in).</div>
+</section>
+
+<!-- ============================================================ 2.5 VIEWS -->
+<section class="page">
+<h2>2.5 Architectural views</h2>
+<p>We follow Kruchten's 4+1 view model: scenarios (use cases) tie together a logical view (key abstractions), a development view (code organisation), a process view (run-time interaction and concurrency) and a physical view (deployment). All diagrams were drawn by us in PlantUML from reading the source code; Ollama does not publish official architecture diagrams.</p>
+
+<h3>Scenario view</h3>
+<figure class="plain"><img src="diagrams/d01_usecase.png" style="width:78%"><figcaption>Figure 1. Use cases. Running a model includes calling the API and scheduling; pulling extends it when the model is missing.</figcaption></figure>
+
+<h3>Development view</h3>
+<p>The repository is organised by responsibility, not by layer names, but four groups emerge: clients (<code>cmd</code>, <code>app</code>, and the Go client in <code>api</code>), the HTTP layer (<code>server</code> plus compatibility middleware), model handling (registry transfer, Modelfile parsing, file-format readers, templates and parsers), and execution (scheduler, runner wrappers, device discovery and the vendored llama.cpp). Dependencies point downward; only <code>envconfig</code> is read everywhere.</p>
+<figure class="plain"><img src="diagrams/d02_packages.png" style="width:100%"><figcaption>Figure 2. Package (development) view of the Go code base.</figcaption></figure>
+</section>
+
+<section>
+<h3>Logical view</h3>
+<p>The core abstraction is the split between <b>what</b> to run (<code>Model</code>, built from a <code>Manifest</code> of content-addressed <code>Layer</code>s) and <b>where</b> it runs (<code>runnerRef</code> wrapping a <code>LlamaServer</code>). The <code>Scheduler</code> is the only class that creates or destroys runners; handlers only borrow them, which the reference count enforces. <code>LlamaServer</code> is an interface with two implementations, so engines are interchangeable.</p>
+<div class="two">
+<figure class="plain"><img src="diagrams/d03_logical.png" style="width:100%"><figcaption>Figure 3. Logical view: key classes (Go structs and interfaces) and their relations.</figcaption></figure>
+<div>
+<h3 style="margin-top:2pt">Physical view</h3>
+<p>Everything runs on the user's machine. The server is one Go process; each loaded model is a child process that maps the weights from the local store and talks to the accelerator. The only network dependencies are the registry (pull/push, signed with the install's ed25519 key) and optional cloud models, which <code>OLLAMA_NO_CLOUD</code> switches off.</p>
+<figure class="plain"><img src="diagrams/d05_deploy.png" style="width:100%"><figcaption>Figure 4. Deployment (physical) view.</figcaption></figure>
+</div>
+</div>
+</section>
+
+<section>
+<h3>Process view</h3>
+<p>Figure 5 follows one chat request. Concurrency is the interesting part: HTTP handlers run on many goroutines, but every load and unload decision is serialised through the scheduler's channels (<code>pendingReqCh</code>, <code>finishedReqCh</code>, <code>expiredCh</code>). This avoids locks around GPU memory accounting, at the cost of the scheduler being a single point through which all model placement flows.</p>
+<figure class="plain"><img src="diagrams/d04_sequence.png" style="width:86%"><figcaption>Figure 5. Process view: <code>ollama run</code> with a cold start, then token streaming.</figcaption></figure>
+</section>
+
+<!-- ============================================================ 2.6 / 2.7 -->
+<section>
+<h2>2.6 Rationale behind the architecture</h2>
+<ul>
+  <li><b>Client–server even on one machine.</b> Putting the model behind a long-lived local server lets many tools (CLI, desktop app, editors, agents) share one loaded copy of the weights. A library would load the model once per process.</li>
+  <li><b>Go for the control plane, C/C++ for the data plane.</b> Go gives easy cross-compilation, goroutines and a small static binary; the arithmetic stays in llama.cpp and MLX, which are where the GPU expertise lives.</li>
+  <li><b>Out-of-process runners.</b> Keeping the engine in a subprocess trades a little latency (local HTTP) for fault isolation, independent upgrades of llama.cpp, and the ability to add MLX without touching the scheduler.</li>
+  <li><b>Docker-like model distribution.</b> Reusing the mental model developers already have (pull, tag, push, a build file) lowers the learning cost, and content addressing gives deduplication and integrity for free.</li>
+  <li><b>Centralised scheduling.</b> GPU memory is the scarcest resource; one owner of all placement decisions makes them consistent and testable (the scheduler's dependencies are injected as functions such as <code>loadFn</code> and <code>getGpuFn</code>, so tests can fake hardware).</li>
+  <li><b>Compatibility as an adapter, not a rewrite.</b> The native API stays simple; OpenAI/Anthropic shapes are translated at the edge.</li>
+</ul>
+
+<h2>2.7 Architectural patterns</h2>
+<table>
+<thead><tr><th style="width:24%">Pattern</th><th>Where it appears</th></tr></thead>
+<tbody>
+<tr><td>Client–server</td><td>CLI, desktop app and third-party apps are clients of <code>ollama serve</code> over HTTP.</td></tr>
+<tr><td>Layered architecture</td><td>HTTP layer → model handling → scheduling → runner → backend library; each layer only calls the one below.</td></tr>
+<tr><td>Master–worker (process isolation)</td><td>The server process supervises one worker subprocess per loaded model.</td></tr>
+<tr><td>Producer–consumer / message queue</td><td>Handlers produce <code>LlmRequest</code>s on channels; the scheduler goroutine consumes them.</td></tr>
+<tr><td>Strategy (via interface)</td><td><code>LlamaServer</code> with llama.cpp and MLX implementations chosen per model.</td></tr>
+<tr><td>Adapter</td><td>OpenAI- and Anthropic-compatible middleware wraps the native handlers.</td></tr>
+<tr><td>Pipes and filters</td><td>Request path: render template → tokenize → generate → parse thinking / tool calls → stream.</td></tr>
+<tr><td>Repository + content-addressable storage</td><td>Manifests and sha256 blobs in <code>~/.ollama/models</code>, mirrored by the remote registry.</td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- ============================================================ PART 3 -->
+<section class="page">
+<h1>3 Extension: an observability layer</h1>
+<h2>3.1 Choice of evolution area and reasoning</h2>
+<p>Section 2.4 shows observability as Ollama's weakest quality attribute. Today an operator has three tools: server logs, <code>GET /api/ps</code> (which models are loaded right now) and the timing fields returned at the end of each response. None of them answers the questions operators actually ask: <em>How long do requests wait in the queue? How often do models reload because of eviction or OOM? Which model and which client consume the GPU? Is p95 latency getting worse after an upgrade?</em></p>
+<p>The demand is concrete. The GitHub request for a Prometheus <code>/metrics</code> endpoint (issue #3144) is still open with more than a hundred comments, a separate request asks for OpenTelemetry tracing (#9254), and at the time of writing two competing pull requests propose different minimal implementations (#16998 and #18508). Commenters report keeping private forks just to get metrics, and third-party exporters exist that poll the API from outside. We chose this area because (a) it is the most requested missing capability for shared deployments, (b) the maintainers' hesitation is <em>architectural</em> (dependency weight, where to hook in, what to expose) rather than about whether it is useful, and (c) it complements part 4: once there are many users behind an IAM gateway, per-user and per-model usage becomes essential.</p>
+<div class="note"><b>Design goals.</b> G1 zero cost when disabled; G2 never slow down or block the inference path; G3 no new mandatory dependencies; G4 standard formats (Prometheus text, OTLP) so existing tooling works; G5 one instrumentation point per event, many consumers.</div>
+
+<h2>3.2 Architectural change</h2>
+<p>We add a <code>telemetry</code> package inside the server. Existing components do not call exporters directly; they <em>emit typed events</em> at five points they already know about: request start, queue wait, model load, token generation and request end. A bounded, non-blocking event bus fans each event out to independent observers: a metrics registry, a trace builder and a usage ledger. Exporters then present that state in standard forms: Prometheus text on <code>GET /metrics</code> (pull), OTLP spans to a collector (push), and a JSON usage summary on <code>GET /api/usage</code> that the desktop app shows in a new "Activity" tab.</p>
+<figure class="plain"><img src="diagrams/d06_ext_component.png" style="width:100%"><figcaption>Figure 6. Component view of the extension (new parts shaded green).</figcaption></figure>
+</section>
+
+<section>
+<div class="two">
+<figure class="plain"><img src="diagrams/d07_ext_class.png" style="width:100%"><figcaption>Figure 7. Logical view of the telemetry package.</figcaption></figure>
+<figure class="plain"><img src="diagrams/d08_ext_sequence.png" style="width:100%"><figcaption>Figure 8. Process view: events emitted during one request, and a Prometheus scrape.</figcaption></figure>
+</div>
+<p><b>Metric catalogue.</b> Names follow Prometheus conventions; labels are kept low-cardinality (model and route only, never prompt content or user identifiers on <code>/metrics</code>).</p>
+<table>
+<thead><tr><th style="width:38%">Metric</th><th style="width:12%">Type</th><th>Answers</th></tr></thead>
+<tbody>
+<tr><td><code>ollama_requests_total{route,model,status}</code></td><td>counter</td><td>Traffic and error rate per model.</td></tr>
+<tr><td><code>ollama_request_duration_seconds{route,model}</code></td><td>histogram</td><td>p50/p95/p99 latency.</td></tr>
+<tr><td><code>ollama_queue_wait_seconds</code>, <code>ollama_queue_depth</code></td><td>histogram, gauge</td><td>Is the server saturated? (vs. <code>OLLAMA_MAX_QUEUE</code>)</td></tr>
+<tr><td><code>ollama_model_load_seconds{model,reason}</code></td><td>histogram</td><td>Cold-start cost; <code>reason</code> = first, evicted, oom_retry.</td></tr>
+<tr><td><code>ollama_tokens_total{model,kind}</code></td><td>counter</td><td>Prompt vs. generated tokens; throughput (tokens/s).</td></tr>
+<tr><td><code>ollama_prompt_cache_hits_total{model}</code></td><td>counter</td><td>KV-cache reuse effectiveness.</td></tr>
+<tr><td><code>ollama_loaded_models</code>, <code>ollama_model_vram_bytes{model,gpu}</code></td><td>gauge</td><td>Memory pressure per GPU.</td></tr>
+<tr><td><code>ollama_telemetry_events_dropped_total</code></td><td>counter</td><td>Honesty about G2: how much telemetry was shed.</td></tr>
+</tbody>
+</table>
+<figure class="plain"><img src="diagrams/d09_ext_deploy.png" style="width:72%"><figcaption>Figure 9. Physical view: a typical monitoring deployment around one Ollama node.</figcaption></figure>
+</section>
+
+<section>
+<h2>3.3 Rationale behind the new architecture</h2>
+<ul>
+  <li><b>Events instead of direct metric calls.</b> If the scheduler incremented Prometheus counters directly, every future consumer (tracing, usage, a UI) would add another call at the same line. With events the scheduler knows nothing about consumers (G5); adding the usage ledger needed no change in the scheduler.</li>
+  <li><b>Non-blocking emit.</b> <code>Emit</code> does a <code>select</code> with a <code>default</code> branch: if the 4096-slot buffer is full, the event is dropped and counted. Inference latency can never be hurt by a slow exporter (G2). Dropped events are themselves a metric, so the trade-off is visible.</li>
+  <li><b>Off by default, standard formats.</b> <code>OLLAMA_METRICS=1</code> registers the observers and the endpoint; without it, <code>Emit</code> is a nil-check (G1). Prometheus text is written by hand (as PR #16998 also argues) so no client library is required; OTLP is a build-tagged optional exporter (G3, G4).</li>
+  <li><b>Pull for metrics, push for traces.</b> Pull fits Ollama's local nature (nothing leaves the machine unless something scrapes it); traces are high-volume and sampled (<code>OLLAMA_TRACE_SAMPLE</code>), so push to a collector is the usual design.</li>
+  <li><b>Usage ledger separate from metrics.</b> Per-client accounting has high cardinality and privacy implications, so it is kept out of <code>/metrics</code> and exposed only through an authenticated JSON endpoint (or, in a gateway deployment like part 4, keyed by the gateway's <code>X-Forwarded-User</code>).</li>
+</ul>
+<p><b>Trade-offs accepted.</b> Under extreme load some telemetry is lost; histograms cost a little memory per model; the new endpoints enlarge the attack surface, so <code>/metrics</code> obeys the same host checks as the rest of the API.</p>
+
+<h2>3.4 Architectural patterns in the new architecture</h2>
+<table>
+<thead><tr><th style="width:24%">Pattern</th><th>Role in the extension</th></tr></thead>
+<tbody>
+<tr><td>Publish–subscribe / Observer</td><td>Server components publish events; metrics, traces and ledger subscribe through the <code>Observer</code> interface.</td></tr>
+<tr><td>Event bus (implicit invocation)</td><td>A bounded channel decouples emitters from consumers in time; consumers run on their own goroutine.</td></tr>
+<tr><td>Strategy / plug-in</td><td><code>Exporter</code> interface with Prometheus and OTLP implementations selected by configuration.</td></tr>
+<tr><td>Sidecar</td><td>Hardware-level GPU metrics stay in a separate exporter process (e.g. DCGM), not inside Ollama.</td></tr>
+<tr><td>Load shedding</td><td>Drop-and-count when the bus is full protects the critical path.</td></tr>
+</tbody>
+</table>
+</section>
+
+<!-- ============================================================ PART 4 -->
+<section class="page">
+<h1>4 Login page and IAM module</h1>
+<h2>4.1 Requirements derived from Ollama</h2>
+<p>An IAM design only makes sense against the system it protects. Reading <code>server/routes.go</code> gave us Ollama's complete API surface and the following facts that shape the requirements: the API has <b>no authentication</b>; anyone who can reach the port can not only run models but also <b>pull</b> (disk and bandwidth), <b>create</b>, <b>copy</b> and <b>delete</b> them; and responses are <b>streamed</b> as NDJSON or server-sent events. Exposed instances are a documented problem: Cisco's 2025 Shodan study found more than a thousand reachable servers, many answering prompts without any authentication.</p>
+<table>
+<thead><tr><th style="width:9%">ID</th><th>Requirement</th><th style="width:33%">Comes from</th></tr></thead>
+<tbody>
+<tr><td>R1</td><td>Ollama itself must not be modified; the protection sits in front of it.</td><td>Ollama releases often; a fork would fall behind.</td></tr>
+<tr><td>R2</td><td>Separate permissions for reading, inference, pulling, pushing and model management.</td><td>The route groups in <code>routes.go</code> have very different costs and risks.</td></tr>
+<tr><td>R3</td><td>Per-user model allowlists (glob patterns, e.g. <code>llama3.2*</code>).</td><td>A 70 B model occupies a whole GPU; some models have restrictive licences.</td></tr>
+<tr><td>R4</td><td>People can create their own account, but only for an e-mail address they control; they then sign in with a password and an optional authenticator-app code.</td><td>A shared lab server should not need an admin for every new student.</td></tr>
+<tr><td>R5</td><td>A new account must not get inference rights by default unless it comes from a trusted organisation.</td><td>Inference is the scarce, costly resource (§2.4).</td></tr>
+<tr><td>R6</td><td>Streaming responses pass through unbuffered; errors keep Ollama's <code>{"error": "..."}</code> shape.</td><td>Token streaming is core to Ollama's UX; clients already show these messages.</td></tr>
+<tr><td>R7</td><td>Every security decision is audited.</td><td>Shared lab servers need accountability.</td></tr>
+<tr><td>R8</td><td>Zero-configuration start like Ollama (one command, SQLite, sensible defaults).</td><td>Ollama's usability priority (§2.4).</td></tr>
+</tbody>
+</table>
+<p><b>Roles.</b> Four roles map onto permissions that mirror the route groups: <b>Viewer</b> (<code>system:read</code>, <code>model:list</code>), <b>Developer</b> (+ <code>model:run</code>), <b>Model operator</b> (+ <code>model:pull</code>, <code>model:manage</code>, <code>audit:read</code>) and <b>Administrator</b> (everything, including <code>model:push</code> and <code>iam:admin</code>). <b>Self sign-up</b> is open to anyone (R4); the e-mail domain sets the starting role (R5): addresses at a configured trusted domain (default <code>bilkent.edu.tr</code>, including subdomains such as <code>ug.bilkent.edu.tr</code>) start as Developer, all others as Viewer until an administrator upgrades them.</p>
+
+<h2>4.2 Architecture</h2>
+<p>The IAM module is a <b>gateway</b> placed in front of Ollama, which is left bound to <code>127.0.0.1</code> so the gateway is the only way in. Inside the gateway, authorization follows the XACML split: a <b>Policy Enforcement Point</b> (the reverse proxy) intercepts every call, asks a <b>Policy Decision Point</b> for a decision, and forwards or rejects. Identities, credentials and sessions live in an <code>IAMService</code>; a separate <code>SignupService</code> owns pending registrations and sends confirmation codes through a <code>Mailer</code> interface (SMTP in production, a fake in tests); everything is written to an append-only audit log.</p>
+<figure class="plain"><img src="diagrams/d10_iam_component.png" style="width:74%"><figcaption>Figure 10. Component view of the gateway and IAM module.</figcaption></figure>
+</section>
+
+<section>
+<figure class="plain"><img src="diagrams/d11_iam_class.png" style="width:86%"><figcaption>Figure 11. Logical view: the IAM domain model. A pending sign-up becomes a user only after its code is confirmed.</figcaption></figure>
+<div class="two">
+<figure class="plain"><img src="diagrams/d12_iam_login_seq.png" style="width:100%"><figcaption>Figure 12. Process view: sign-up with an e-mailed code, then sign-in with optional second factor.</figcaption></figure>
+<div>
+<figure class="plain"><img src="diagrams/d13_iam_api_seq.png" style="width:100%"><figcaption>Figure 13. Process view: an API call through the enforcement point.</figcaption></figure>
+<figure class="plain"><img src="diagrams/d14_iam_deploy.png" style="width:100%"><figcaption>Figure 14. Physical view: recommended deployment behind TLS, with an SMTP server for codes.</figcaption></figure>
+</div>
+</div>
+</section>
+
+<section>
+<h3>Rationale and patterns</h3>
+<table>
+<thead><tr><th style="width:26%">Decision / pattern</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Gateway (reverse proxy) instead of patching Ollama</td><td>Satisfies R1: works with every Ollama release, can be adopted or removed without touching the server, and matches the Ollama FAQ, which already describes exposing the server through a proxy such as Nginx.</td></tr>
+<tr><td>PEP / PDP separation</td><td>All access logic is one pure function, <code>decide()</code>, that is trivially unit-tested (Figure 13); the proxy only enforces.</td></tr>
+<tr><td>Role-based access control + model allowlist (attribute)</td><td>Roles cover the route groups (R2); the allowlist is an attribute check on the requested model (R3) — a small RBAC+ABAC hybrid.</td></tr>
+<tr><td>Default deny route table</td><td>Every Ollama route is listed with its permission; anything new or unknown returns 404 until it is classified.</td></tr>
+<tr><td>Layered internals</td><td>Presentation (pages) → application services (<code>IAMService</code>, <code>SignupService</code>) → repository (<code>Database</code>); the proxy and pages never touch SQL.</td></tr>
+<tr><td>Pipes and filters request pipeline</td><td>identify → extract model → decide → forward → filter listing → audit (Figure 13).</td></tr>
+<tr><td>Proof of e-mail before an account exists</td><td>Pending sign-ups live in their own table; nothing is added to <code>users</code> until the code is confirmed, so typos and fake addresses never create accounts.</td></tr>
+<tr><td>Dependency inversion for e-mail</td><td><code>SignupService</code> depends on a <code>Mailer</code> interface, not on SMTP; tests inject a fake and any provider (Gmail, Outlook, a campus relay) is just configuration.</td></tr>
+<tr><td>Least privilege by default</td><td>Untrusted domains start as Viewer (R5); an admin, not the sign-up form, grants inference to outsiders.</td></tr>
+<tr><td>Server-side sessions</td><td>Unlike stateless JWT sessions, they can be revoked instantly (on disable, on logout).</td></tr>
+</tbody>
+</table>
+
+<h2>4.3 The login page</h2>
+<p>Ollama's own sign-in (in the desktop app) only connects a local install to an ollama.com account; there is no page that protects a server. Our page is designed for the person who is about to use <em>a specific inference server</em>, so beside the form it shows that server's real state: a three-node route (You → Gateway → Ollama) whose links turn green as the health check succeeds, with the measured round-trip to Ollama. If Ollama is down the second link turns red before the user even signs in, which turns the most common support question ("is it me or the server?") into something visible. The health endpoint deliberately reveals no version or model names to anonymous visitors.</p>
+<div class="two">
+<figure><img src="screenshots/01_login.png"><figcaption>Figure 15. Sign-in page (desktop, light theme).</figcaption></figure>
+<figure><img src="screenshots/02_login_error.png"><figcaption>Figure 16. Failed attempt: one generic message, username kept.</figcaption></figure>
+</div>
+<p>Usability details: users can sign in with a username or their e-mail; a show/hide password toggle and a Caps Lock warning; the submit button disables itself to prevent double posts; error text says what to do next; the same message is used whether the account or the password is wrong. After five failures the account locks for 15 minutes with a message that says so. The second-factor screen uses six digit boxes that accept paste and submit automatically.</p>
+</section>
+
+<section>
+<h3>Creating an account</h3>
+<p>"Create an account" asks for an e-mail, a name and a password. While the e-mail is typed, a hint tells the person which role they will start with. Submitting stores a <em>pending</em> sign-up and e-mails a 6-digit code; the account exists only after the code is entered on the next page, and the person is then signed in directly. Codes expire after 10 minutes, five wrong codes discard the attempt, and "send a new code" works at most once a minute. If the server has no SMTP settings, the page says sign-up is off and an administrator can still add users.</p>
+<div class="two">
+<figure><img src="screenshots/07_signup.png"><figcaption>Figure 17. Sign-up form; the hint shows the starting role for a Bilkent address.</figcaption></figure>
+<figure><img src="screenshots/08_signup_verify.png"><figcaption>Figure 18. Code entry, with resend and start-again links.</figcaption></figure>
+</div>
+<div class="two">
+<figure><img src="screenshots/09_signup_email.png"><figcaption>Figure 19. The confirmation e-mail as received over SMTP.</figcaption></figure>
+<figure><img src="screenshots/06_mfa_prompt.png"><figcaption>Figure 20. Optional second factor (TOTP) at sign-in.</figcaption></figure>
+</div>
+<div class="two">
+<figure><img src="screenshots/14_login_mobile.png" style="max-height:80mm"><figcaption>Figure 21. Phone layout.</figcaption></figure>
+<figure><img src="screenshots/15_login_dark.png"><figcaption>Figure 22. Dark theme follows the OS setting.</figcaption></figure>
+</div>
+</section>
+
+<section>
+<h3>After sign-in</h3>
+<p>The <b>Models</b> page lists only the models the user may use, shows their effective permissions, and has a small prompt box that calls Ollama <em>through</em> the gateway, so a 403 for a model outside the allowlist is shown in place (Figure 23). A viewer sees the list but no prompt box. <b>Account</b> handles authenticator enrolment by QR code and password change. Administrators manage users, roles and model access, and read the audit log.</p>
+<div class="two">
+<figure><img src="screenshots/03_dashboard_dev.png"><figcaption>Figure 23. Developer: allowed models, permissions, and a denied request to <code>gemma3:12b</code>.</figcaption></figure>
+<figure><img src="screenshots/05_mfa_enrol.png"><figcaption>Figure 24. Enrolling an authenticator app.</figcaption></figure>
+</div>
+<div class="two">
+<figure><img src="screenshots/12_admin_users.png" style="max-height:115mm"><figcaption>Figure 25. Administrator: users (including the self-registered one), roles and model access.</figcaption></figure>
+<figure><img src="screenshots/13_audit.png"><figcaption>Figure 26. Audit log filtered to denials: a model outside a developer's allowlist (403), an anonymous API call (401) and a failed sign-in.</figcaption></figure>
+</div>
+</section>
+
+<section>
+<h2>4.4 Implementation</h2>
+<p>Python 3 with FastAPI, about 2,000 lines of Python including tests. Cryptography uses the standard library so that every algorithm is visible: scrypt password hashing (N = 2<sup>14</sup>, r = 8, p = 1, per-user salt), RFC 6238 TOTP written from scratch, SHA-256 of confirmation codes, and <code>smtplib</code> with STARTTLS for e-mail. Persistence is a single SQLite file (users, user_roles, sessions, signups, audit_log). The module layout follows Figure 10 one-to-one (<code>policy.py</code> = PDP, <code>proxy.py</code> = PEP, <code>iam.py</code> = IAMService, <code>signup.py</code> = SignupService, <code>mailer.py</code> = Mailer, <code>web.py</code> = presentation).</p>
+<p>The route table is the heart of the design; it mirrors Ollama's router line by line:</p>
+<pre>ROUTE_RULES = [
+    _r("GET",    "/api/tags",            Perm.MODEL_LIST, "none"),
+    _r("POST",   "/api/chat",            Perm.MODEL_RUN),         # model taken from JSON body
+    _r("POST",   "/v1/chat/completions", Perm.MODEL_RUN),
+    _r("POST",   "/api/pull",            Perm.MODEL_PULL),
+    _r("DELETE", "/api/delete",          Perm.MODEL_MANAGE),
+    _r("GET",    "/v1/models/:model",    Perm.MODEL_LIST, "path"),  # model taken from URL
+    ...                                                             # 25 rules in total
+]
+
+def decide(principal, method, path, models) -> Decision:
+    matched = match_route(method, path)
+    if matched is None:          return Decision(False, 404, "Route is not exposed through the gateway.")
+    if principal is None:        return Decision(False, 401, "Authentication required.")
+    if not principal.can(rule.perm):
+                                 return Decision(False, 403, f"Missing permission {rule.perm.value}.")
+    blocked = [m for m in models if not principal.may_use_model(m)]
+    if blocked:                  return Decision(False, 403, f"Not allowed to use model {blocked[0]}.")
+    return Decision(True, 200, "ok")</pre>
+<p>The starting role of a sign-up is one small rule: <code>developer</code> if the address's domain equals a trusted domain or ends with <code>"." + domain</code>, otherwise <code>viewer</code>. Model names are normalised before matching (<code>llama3.2</code> → <code>llama3.2:latest</code>, registry prefix removed) so an allowlist cannot be bypassed by spelling a model differently. Listing endpoints (<code>/api/tags</code>, <code>/v1/models</code>) are filtered so users do not even see models they cannot use. The proxy forwards with <code>httpx</code> in streaming mode and relays raw chunks, so NDJSON and SSE streams reach the client token by token (R6); it strips the session cookie and adds <code>X-Request-ID</code> and <code>X-Forwarded-User</code> for Ollama's logs and for the usage ledger proposed in part 3.</p>
+<p>Browser calls to Ollama's API (the prompt box on the Models page) carry the session cookie plus an <code>X-CSRF-Token</code> header, so another web site cannot make a signed-in user's browser call Ollama behind their back:</p>
+<pre>POST /api/chat   {"model":"gemma3:12b", ...}   as deniz.dev (allowlist llama3.2*, qwen3*, nomic-embed-text*)
+→ 403 {"error": "Not allowed to use model gemma3:12b."}
+POST /api/chat   {"model":"qwen3:4b", ...}     as a Viewer
+→ 403 {"error": "Missing permission model:run."}</pre>
+
+<h3>Security measures</h3>
+<table>
+<thead><tr><th style="width:24%">Threat</th><th>Measure</th></tr></thead>
+<tbody>
+<tr><td>Password guessing</td><td>Lockout after 5 failures for 15 min; scrypt; equal timing for unknown users.</td></tr>
+<tr><td>Stolen password</td><td>Optional TOTP; a used code cannot be replayed (<code>mfa_last_step</code>).</td></tr>
+<tr><td>Signing up with someone else's address</td><td>No account until the e-mailed code is entered; the code goes only to that inbox.</td></tr>
+<tr><td>Guessing a sign-up code</td><td>Codes are random, stored only as a hash, expire in 10 min; 5 wrong tries discard the sign-up; resends limited to one a minute and five in total.</td></tr>
+<tr><td>Session fixation / hijack</td><td>Random 256-bit IDs, HttpOnly + SameSite cookies, ID rotated after MFA.</td></tr>
+<tr><td>CSRF</td><td>Token in every form (separate tokens for the login and sign-up forms); browser API calls must send <code>X-CSRF-Token</code>.</td></tr>
+<tr><td>Clickjacking, XSS</td><td>CSP, <code>frame-ancestors 'none'</code>, auto-escaping templates.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section>
+<h2>4.5 Verification and known limits</h2>
+<p>An automated suite of 19 pytest tests runs the gateway against an in-process stand-in for Ollama (<code>mock_ollama.py</code>, which reproduces the JSON shapes of the real API) and a fake mailer. It checks the RFC 6238 test vector and replay rejection, the policy matrix, login success and the generic failure message, login-form CSRF, lockout, the complete MFA flow including session rotation, unauthenticated API access, a Viewer blocked from running models, a Developer's allowlist and filtered model list, the OpenAI-compatible route, a disabled user losing access immediately, the CSRF header for browser calls, auditing of denials, and sign-up: a Bilkent subdomain becomes Developer, another domain becomes Viewer and can then sign in with its e-mail, wrong codes are limited, duplicates and weak passwords are rejected, and resends respect the cooldown. All 19 pass. We also ran the whole sign-up end to end against a real SMTP server (Figure 19); the screenshots in this report were taken from that running system with a scripted browser.</p>
+<table>
+<thead><tr><th style="width:28%">Limit</th><th>Path forward</th></tr></thead>
+<tbody>
+<tr><td>Only browser access is covered; scripts and SDKs can't use the gateway</td><td>Add scoped, revocable API keys (<code>Authorization: Bearer …</code>) checked by the same PDP.</td></tr>
+<tr><td>Single process, SQLite</td><td>Move sessions to Redis and the database to PostgreSQL; the gateway is then stateless and can run as several replicas.</td></tr>
+<tr><td>Sign-up tells a visitor that an e-mail is already registered</td><td>Always show "check your e-mail" and send the existing owner a "you already have an account" message instead.</td></tr>
+<tr><td>The code is sent while the visitor waits; a slow mail server slows the page</td><td>Hand messages to a background queue with retries.</td></tr>
+<tr><td>Inline scripts require <code>'unsafe-inline'</code> in the CSP</td><td>Move scripts to static files and use nonces.</td></tr>
+</tbody>
+</table>
+
+<h1 style="margin-top:12pt">5 Conclusion</h1>
+<p>Ollama's architecture is a clear example of designing for one quality above all: making local inference effortless. A Go control plane with a single scheduler, out-of-process engines behind one interface, Docker-like model distribution and edge adapters for other APIs together deliver that. The same choices leave shared deployments under-served. Our two proposals target that gap from different sides and keep Ollama's priorities intact: the observability layer is an opt-in, event-based addition that cannot slow the inference path, and the IAM gateway adds authentication, fine-grained authorization, auditing and a better sign-in experience without changing a line of Ollama. They also reinforce each other: the gateway's per-user identity is what makes the extension's usage ledger meaningful.</p>
+
+<h2>References</h2>
+<ol class="small">
+  <li>Ollama source code, github.com/ollama/ollama, commit 42e911b (2 Oct 2026): <code>server/routes.go</code>, <code>server/sched.go</code>, <code>llm/server.go</code>, <code>llm/llama_server.go</code>, <code>mlxrunner/client.go</code>, <code>manifest/</code>, <code>envconfig/config.go</code>, <code>docs/faq.mdx</code>. MIT licence.</li>
+  <li>Ollama issue #3144 "add /metrics endpoint"; issue #9254 "Add support for opentelemetry tracing"; pull requests #16998 and #18508. github.com/ollama/ollama.</li>
+  <li>Cisco Talos / Cisco Security Blog, "Detecting Exposed LLM Servers: A Shodan Case Study on Ollama", September 2025.</li>
+  <li>Cybernews, report on CVE-2026-7482 (heap out-of-bounds read via crafted GGUF files, fixed in 0.17.1), May 2026.</li>
+  <li>P. Kruchten, "The 4+1 View Model of Architecture", IEEE Software 12(6), 1995.</li>
+  <li>L. Bass, P. Clements, R. Kazman, <em>Software Architecture in Practice</em>, 4th ed., Addison-Wesley, 2021 (quality attribute scenarios, patterns).</li>
+  <li>IETF RFC 6238 (TOTP), RFC 5321 (SMTP), RFC 3207 (STARTTLS); OASIS XACML 3.0 (PEP/PDP model).</li>
+  <li>Prometheus exposition format documentation; OpenTelemetry specification (OTLP).</li>
+</ol>
+</section>
+</body>
+</html>

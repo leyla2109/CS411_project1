@@ -1,0 +1,44 @@
+{% extends "auth_base.html" %}
+{% block form %}
+<h1>Sign in</h1>
+<p class="lede">Use your gateway account to see and run the models on this server.</p>
+{% if error %}<div class="notice bad" role="alert">{{ error }}</div>{% endif %}
+{% if info %}<div class="notice ok" role="status">{{ info }}</div>{% endif %}
+<form method="post" action="/ui/login" id="login-form" novalidate>
+  <input type="hidden" name="csrf" value="{{ login_csrf }}">
+  <input type="hidden" name="next" value="{{ next or '' }}">
+  <div class="field">
+    <label for="username">Username or email</label>
+    <input type="text" id="username" name="username" value="{{ username or '' }}" autocomplete="username" autocapitalize="none" spellcheck="false" required {% if not username %}autofocus{% endif %}>
+  </div>
+  <div class="field">
+    <label for="password">Password</label>
+    <div class="pw-wrap">
+      <input type="password" id="password" name="password" autocomplete="current-password" required {% if username %}autofocus{% endif %}>
+      <button type="button" class="pw-toggle" aria-controls="password" aria-pressed="false">Show</button>
+    </div>
+    <div class="caps" id="caps" role="status">Caps Lock is on.</div>
+  </div>
+  <button class="btn block" type="submit">Sign in</button>
+</form>
+<p class="switch">New here? <a href="/ui/signup">Create an account</a></p>
+{% endblock %}
+{% block scripts %}
+<script>
+const pw = document.getElementById('password');
+const toggle = document.querySelector('.pw-toggle');
+toggle.addEventListener('click', () => {
+  const show = pw.type === 'password';
+  pw.type = show ? 'text' : 'password';
+  toggle.textContent = show ? 'Hide' : 'Show';
+  toggle.setAttribute('aria-pressed', String(show));
+  pw.focus();
+});
+const caps = document.getElementById('caps');
+pw.addEventListener('keyup', e => caps.classList.toggle('on', e.getModifierState && e.getModifierState('CapsLock')));
+document.getElementById('login-form').addEventListener('submit', e => {
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+});
+</script>
+{% endblock %}

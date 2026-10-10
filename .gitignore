@@ -1,0 +1,9 @@
+# local data: user database and secret
+ollama-gateway/data/
+# never commit mail credentials
+smtp.env
+*.env
+__pycache__/
+.pytest_cache/
+.DS_Store
+maildir/
