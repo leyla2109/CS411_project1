@@ -25,7 +25,7 @@ Email sign-up needs SMTP settings; see `ollama-gateway/README.md`. Never commit 
 
 | Name | Student ID |
 |---|---|
-| [Name Surname] | [ID] |
-| [Name Surname] | [ID] |
-| [Name Surname] | [ID] |
-| [Name Surname] | [ID] |
+|Shahin Ibrahimli | 22301574 |
+| Farrukh Mammadov | 22301186 |
+| Leyla Abbasova | 22301172 |
+| Zaeem Sheikh Masood | 22201178 |
